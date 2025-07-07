@@ -15,17 +15,20 @@ export const authOptions = {
       type: 'credentials',
 
       credentials: {},
+
       async authorize(credentials) {
         const { email, password } = credentials
 
-        // ✅ Use static demo logic
+        // ✅ Demo static login logic
         if (email === 'admin@materialize.com' && password === 'admin') {
           return { id: 1, name: 'Admin', email: 'admin@materialize.com' }
         }
 
-        return null
+        // ❌ Throw explicit error if wrong
+        throw new Error('Invalid email or password')
       }
     }),
+
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET
@@ -38,7 +41,8 @@ export const authOptions = {
   },
 
   pages: {
-    signIn: '/login'
+    signIn: '/login',
+    error: '/login' // Redirect to login page on error
   },
 
   callbacks: {
