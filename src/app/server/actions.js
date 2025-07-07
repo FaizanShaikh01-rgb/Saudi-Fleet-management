@@ -65,5 +65,4 @@ export const getTripData = async () => {
   return tripsDb.trips
 }
 
-// Add this at the end for CommonJS compatibility
-module.exports.getVehicleData = getVehicleData
+

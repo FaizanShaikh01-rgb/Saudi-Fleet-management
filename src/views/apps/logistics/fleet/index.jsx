@@ -13,7 +13,9 @@ import classNames from 'classnames'
 //Components Imports
 import CustomIconButton from '@core/components/mui/IconButton'
 import FleetSidebar from './FleetSidebar'
-import FleetMap from './FleetMap'
+import dynamic from 'next/dynamic'
+
+const FleetMap = dynamic(() => import('./FleetMap'), { ssr: false })
 
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
