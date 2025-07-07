@@ -18,30 +18,12 @@ export const authOptions = {
       async authorize(credentials) {
         const { email, password } = credentials
 
-        try {
-          // ✅ Hardcoded API URL directly, so no undefined
-          const res = await fetch(`http://localhost:3000/api/login`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, password })
-          })
-
-          const data = await res.json()
-
-          if (res.status === 401) {
-            throw new Error(JSON.stringify(data))
-          }
-
-          if (res.status === 200) {
-            return data
-          }
-
-          return null
-        } catch (e) {
-          throw new Error(e.message)
+        // ✅ Use static demo logic
+        if (email === 'admin@materialize.com' && password === 'admin') {
+          return { id: 1, name: 'Admin', email: 'admin@materialize.com' }
         }
+
+        return null
       }
     }),
     GoogleProvider({
