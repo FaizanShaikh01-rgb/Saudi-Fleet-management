@@ -1,3 +1,6 @@
+/* -------------------------------------------------------------------------- */
+/*  OrderListTable – Fleet Management version                                 */
+/* -------------------------------------------------------------------------- */
 // React Imports
 import { useState, useEffect, useMemo } from 'react'
 
@@ -15,7 +18,7 @@ import Chip from '@mui/material/Chip'
 import TablePagination from '@mui/material/TablePagination'
 import TextField from '@mui/material/TextField'
 
-// Third-party Imports
+// Third‑party Imports
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
 import {
@@ -42,220 +45,221 @@ import { getLocalizedUrl } from '@/utils/i18n'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-export const paymentStatus = {
-  1: { text: 'Paid', color: 'success', colorClassName: 'text-success' },
-  2: { text: 'Pending', color: 'warning', colorClassName: 'text-warning' },
-  3: { text: 'Cancelled', color: 'secondary', colorClassName: 'text-secondary' },
-  4: { text: 'Failed', color: 'error', colorClassName: 'text-error' }
-}
-export const statusChipColor = {
+/* -------------------------------------------------------------------------- */
+/*  Constants                                                                 */
+/* -------------------------------------------------------------------------- */
+
+// Map each shipment status to an MUI Chip color
+export const shipmentStatusColor = {
   Delivered: { color: 'success' },
   'Out for Delivery': { color: 'primary' },
   'Ready to Pickup': { color: 'info' },
-  Dispatched: { color: 'warning' }
+  Dispatched: { color: 'warning' },
+  Idle: { color: 'secondary' },
+  'Loading Dock': { color: 'default' },
+  'On Route': { color: 'primary' },
+  Maintenance: { color: 'error' }
 }
 
+// Chip colors for perishable flag
+export const orderTypeColor = {
+  perashible: { color: 'error' },
+  'non perashible': { color: 'success' }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Helpers                                                                   */
+/* -------------------------------------------------------------------------- */
+
 const fuzzyFilter = (row, columnId, value, addMeta) => {
-  // Rank the item
   const itemRank = rankItem(row.getValue(columnId), value)
-
-  // Store the itemRank info
-  addMeta({
-    itemRank
-  })
-
-  // Return if the item should be filtered in/out
+  addMeta({ itemRank })
   return itemRank.passed
 }
 
-const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
-  // States
+const DebouncedInput = ({
+  value: initialValue,
+  onChange,
+  debounce = 500,
+  ...props
+}) => {
   const [value, setValue] = useState(initialValue)
 
-  useEffect(() => {
-    setValue(initialValue)
-  }, [initialValue])
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      onChange(value)
-    }, debounce)
+  useEffect(() => setValue(initialValue), [initialValue])
 
+  useEffect(() => {
+    const timeout = setTimeout(() => onChange(value), debounce)
     return () => clearTimeout(timeout)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value])
+  }, [value]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <TextField {...props} value={value} onChange={e => setValue(e.target.value)} size='small' />
+  return (
+    <TextField
+      size='small'
+      {...props}
+      value={value}
+      onChange={e => setValue(e.target.value)}
+    />
+  )
 }
 
-// Column Definitions
+/* -------------------------------------------------------------------------- */
+/*  Main Component                                                            */
+/* -------------------------------------------------------------------------- */
+
 const columnHelper = createColumnHelper()
 
 const OrderListTable = ({ orderData }) => {
-  // States
+  /* -- state ------------------------------------------------------------- */
   const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState(...[orderData])
+  const [data, setData] = useState(orderData)
   const [globalFilter, setGlobalFilter] = useState('')
-
-  // Hooks
   const { lang: locale } = useParams()
 
-  // Vars
-  const paypal = '/images/apps/ecommerce/paypal.png'
-  const mastercard = '/images/apps/ecommerce/mastercard.png'
-
   const columns = useMemo(
-    () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            {...{
-              checked: table.getIsAllRowsSelected(),
-              indeterminate: table.getIsSomeRowsSelected(),
-              onChange: table.getToggleAllRowsSelectedHandler()
-            }}
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            {...{
-              checked: row.getIsSelected(),
-              disabled: !row.getCanSelect(),
-              indeterminate: row.getIsSomeSelected(),
-              onChange: row.getToggleSelectedHandler()
-            }}
-          />
-        )
-      },
-      columnHelper.accessor('order', {
-        header: 'Order',
-        cell: ({ row }) => (
-          <Typography
-            component={Link}
-            href={getLocalizedUrl(`/apps/ecommerce/orders/details/${row.original.order}`, locale)}
-            color='primary.main'
-          >{`#${row.original.order}`}</Typography>
-        )
-      }),
-      columnHelper.accessor('date', {
-        header: 'Date',
-        cell: ({ row }) => (
-          <Typography>{`${new Date(row.original.date).toDateString()}, ${row.original.time}`}</Typography>
-        )
-      }),
-      columnHelper.accessor('customer', {
-        header: 'Customers',
-        cell: ({ row }) => (
+  () => [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllRowsSelected()}
+          indeterminate={table.getIsSomeRowsSelected()}
+          onChange={table.getToggleAllRowsSelectedHandler()}
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
+          indeterminate={row.getIsSomeSelected()}
+          onChange={row.getToggleSelectedHandler()}
+        />
+      )
+    },
+
+    columnHelper.accessor('order', {
+      header: 'Order',
+      cell: ({ row }) => (
+        <Typography
+          component={Link}
+          href={getLocalizedUrl(`/apps/fleet/orders/details/${row.original.order}`, locale)}
+          color='primary.main'
+        >
+          #{row.original.order}
+        </Typography>
+      )
+    }),
+
+    columnHelper.accessor('po', {
+      header: 'PO',
+      cell: ({ row }) => <Typography>#{row.original.po}</Typography>
+    }),
+
+    columnHelper.accessor('customer', {
+      header: 'Customer',
+      cell: ({ row }) => {
+        const customer = row.original.customer || 'Unknown'
+        const avatar = row.original.avatar
+
+        return (
           <div className='flex items-center gap-3'>
-            {getAvatar({ avatar: row.original.avatar, customer: row.original.customer })}
+            {avatar ? (
+              <CustomAvatar src={avatar} skin='light' size={34} />
+            ) : (
+              <CustomAvatar skin='light' size={34}>
+                {getInitials(customer)}
+              </CustomAvatar>
+            )}
             <div className='flex flex-col'>
               <Typography
                 component={Link}
-                href={getLocalizedUrl('/apps/ecommerce/customers/details/879861', locale)}
+                href={getLocalizedUrl('/apps/ecommerce/customers/details/placeholder', locale)}
                 color='text.primary'
                 className='font-medium hover:text-primary'
               >
-                {row.original.customer}
+                {customer}
               </Typography>
               <Typography variant='body2'>{row.original.email}</Typography>
             </div>
           </div>
         )
-      }),
-      columnHelper.accessor('payment', {
-        header: 'Payment',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            <i
-              className={classnames('ri-circle-fill bs-2.5 is-2.5', paymentStatus[row.original.payment].colorClassName)}
-            />
-            <Typography color={`${paymentStatus[row.original.payment].color}.main`} className='font-medium'>
-              {paymentStatus[row.original.payment].text}
-            </Typography>
-          </div>
-        )
-      }),
-      columnHelper.accessor('status', {
-        header: 'Status',
-        cell: ({ row }) => (
-          <Chip
-            label={row.original.status}
-            color={statusChipColor[row.original.status].color}
-            variant='tonal'
-            size='small'
-          />
-        )
-      }),
-      columnHelper.accessor('method', {
-        header: 'Method',
-        cell: ({ row }) => (
-          <div className='flex items-center'>
-            <div className='flex justify-center items-center bg-[#F6F8FA] rounded-sm is-[29px] bs-[18px]'>
-              <img
-                src={row.original.method === 'mastercard' ? mastercard : paypal}
-                height={row.original.method === 'mastercard' ? 11 : 14}
-              />
-            </div>
-            <Typography>
-              {`...${row.original.method === 'mastercard' ? row.original.methodNumber : '@gmail.com'}`}
-            </Typography>
-          </div>
-        )
-      }),
-      columnHelper.accessor('action', {
-        header: 'Action',
-        cell: ({ row }) => (
-          <div className='flex items-center'>
-            <OptionMenu
-              iconButtonProps={{ size: 'medium' }}
-              iconClassName='text-[22px]'
-              options={[
-                {
-                  text: 'View',
-                  icon: 'ri-eye-line',
-                  href: getLocalizedUrl(`/apps/ecommerce/orders/details/${row.original.order}`, locale),
-                  linkProps: { className: 'flex items-center gap-2 is-full plb-2 pli-4' }
-                },
-                {
-                  text: 'Delete',
-                  icon: 'ri-delete-bin-7-line text-[22px]',
-                  menuItemProps: {
-                    onClick: () => setData(data?.filter(order => order.id !== row.original.id)),
-                    className: 'flex items-center gap-2 pli-4'
-                  }
-                }
-              ]}
-            />
-          </div>
-        ),
-        enableSorting: false
-      })
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data]
-  )
-
-  const table = useReactTable({
-    data: data,
-    columns,
-    filterFns: {
-      fuzzy: fuzzyFilter
-    },
-    state: {
-      rowSelection,
-      globalFilter
-    },
-    initialState: {
-      pagination: {
-        pageSize: 10
       }
-    },
-    enableRowSelection: true, //enable row selection for all rows
-    // enableRowSelection: row => row.original.age > 18, // or enable row selection conditionally per row
+    }),
+
+    columnHelper.accessor('shipment status', {
+      header: 'Status',
+      cell: ({ row }) => (
+        <Chip
+          label={row.original['shipment status']}
+          color={shipmentStatusColor[row.original['shipment status']]?.color || 'default'}
+          variant='tonal'
+          size='small'
+        />
+      )
+    }),
+
+    columnHelper.accessor('order type', {
+      header: 'Order Type',
+      cell: ({ row }) => (
+        <Chip
+          label={row.original['order type']}
+          color={orderTypeColor[row.original['order type']]?.color || 'default'}
+          variant='tonal'
+          size='small'
+        />
+      )
+    }),
+
+    columnHelper.accessor('date', {
+      header: 'Date / Time',
+      cell: ({ row }) => (
+        <Typography>
+          {new Date(row.original.date).toDateString()}, {row.original['time stamp'] || 'N/A'}
+        </Typography>
+      )
+    }),
+
+    columnHelper.accessor('action', {
+      header: 'Action',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <OptionMenu
+          iconButtonProps={{ size: 'medium' }}
+          iconClassName='text-[22px]'
+          options={[
+            {
+              text: 'View',
+              icon: 'ri-eye-line',
+              href: getLocalizedUrl(`/apps/fleet/orders/details/${row.original.order}`, locale),
+              linkProps: { className: 'flex items-center gap-2 is-full plb-2 pli-4' }
+            },
+            {
+              text: 'Delete',
+              icon: 'ri-delete-bin-7-line',
+              menuItemProps: {
+                onClick: () => setData(data.filter(o => o.id !== row.original.id)),
+                className: 'flex items-center gap-2 pli-4'
+              }
+            }
+          ]}
+        />
+      )
+    })
+  ],
+  [data, locale]
+)
+
+  /* -- table instance --------------------------------------------------- */
+  const table = useReactTable({
+    data,
+    columns,
+    state: { rowSelection, globalFilter },
+    initialState: { pagination: { pageSize: 10 } },
+    filterFns: { fuzzy: fuzzyFilter },
+    enableRowSelection: true,
     globalFilterFn: fuzzyFilter,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -264,33 +268,30 @@ const OrderListTable = ({ orderData }) => {
     getFacetedMinMaxValues: getFacetedMinMaxValues()
   })
 
-  const getAvatar = params => {
-    const { avatar, customer } = params
-
-    if (avatar) {
-      return <CustomAvatar src={avatar} skin='light' size={34} />
-    } else {
-      return (
-        <CustomAvatar skin='light' size={34}>
-          {getInitials(customer)}
-        </CustomAvatar>
-      )
-    }
-  }
+  /* ---------------------------------------------------------------------- */
+  /*  Render                                                               */
+  /* ---------------------------------------------------------------------- */
 
   return (
     <Card>
-      <CardContent className='flex justify-between max-sm:flex-col sm:items-center gap-4'>
-        <DebouncedInput
-          value={globalFilter ?? ''}
-          onChange={value => setGlobalFilter(String(value))}
-          placeholder='Search Order'
-          className='sm:is-auto'
-        />
-        <Button variant='outlined' color='secondary' startIcon={<i className='ri-upload-2-line' />}>
-          Export
-        </Button>
-      </CardContent>
+      {/* Top bar */}
+      <CardContent className='flex justify-between flex-col sm:flex-row sm:items-center gap-4'>
+  <DebouncedInput
+  value={globalFilter ?? ''}
+  onChange={val => setGlobalFilter(String(val))}
+  placeholder='Search Order / Customer'
+  className='sm:w-auto w-full'
+/>
+  <Button
+    variant='outlined'
+    color='secondary'
+    startIcon={<i className='ri-upload-2-line' />}
+  >
+    Export
+  </Button>
+</CardContent>
+
+      {/* Table */}
       <div className='overflow-x-auto'>
         <table className={tableStyles.table}>
           <thead>
@@ -299,27 +300,27 @@ const OrderListTable = ({ orderData }) => {
                 {headerGroup.headers.map(header => (
                   <th key={header.id}>
                     {header.isPlaceholder ? null : (
-                      <>
-                        <div
-                          className={classnames({
-                            'flex items-center': header.column.getIsSorted(),
-                            'cursor-pointer select-none': header.column.getCanSort()
-                          })}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: <i className='ri-arrow-up-s-line text-xl' />,
-                            desc: <i className='ri-arrow-down-s-line text-xl' />
-                          }[header.column.getIsSorted()] ?? null}
-                        </div>
-                      </>
+                      <div
+                        className={classnames({
+                          'flex items-center': header.column.getIsSorted(),
+                          'cursor-pointer select-none': header.column.getCanSort()
+                        })}
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {{
+                          asc: <i className='ri-arrow-up-s-line text-xl' />,
+                          desc: <i className='ri-arrow-down-s-line text-xl' />
+                        }[header.column.getIsSorted()] ?? null}
+                      </div>
                     )}
                   </th>
                 ))}
               </tr>
             ))}
           </thead>
+
+          {/* Body */}
           {table.getFilteredRowModel().rows.length === 0 ? (
             <tbody>
               <tr>
@@ -333,19 +334,21 @@ const OrderListTable = ({ orderData }) => {
               {table
                 .getRowModel()
                 .rows.slice(0, table.getState().pagination.pageSize)
-                .map(row => {
-                  return (
-                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                      {row.getVisibleCells().map(cell => (
-                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                      ))}
-                    </tr>
-                  )
-                })}
+                .map(row => (
+                  <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
             </tbody>
           )}
         </table>
       </div>
+
+      {/* Pagination */}
       <TablePagination
         rowsPerPageOptions={[10, 25, 50, 100]}
         component='div'
@@ -353,12 +356,8 @@ const OrderListTable = ({ orderData }) => {
         count={table.getFilteredRowModel().rows.length}
         rowsPerPage={table.getState().pagination.pageSize}
         page={table.getState().pagination.pageIndex}
-        SelectProps={{
-          inputProps: { 'aria-label': 'rows per page' }
-        }}
-        onPageChange={(_, page) => {
-          table.setPageIndex(page)
-        }}
+        SelectProps={{ inputProps: { 'aria-label': 'rows per page' } }}
+        onPageChange={(_, page) => table.setPageIndex(page)}
         onRowsPerPageChange={e => table.setPageSize(Number(e.target.value))}
       />
     </Card>
